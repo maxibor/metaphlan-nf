@@ -87,7 +87,7 @@ process AdapterRemoval {
 process get_read_count {
     tag "$name"
 
-    label 'expresso'
+    label 'ristretto'
 
     input:
         set val(name), file(ar_settings) from adapter_removal_results
