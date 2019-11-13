@@ -3,7 +3,6 @@
 import argparse
 import os
 import pandas as pd
-import numpy as np
 
 
 def _get_args():

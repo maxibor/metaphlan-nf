@@ -50,8 +50,7 @@ process build_metaphlan_db {
     
   script:
     """
-    metaphlan2.py --install &> install_log.txt
-    grep Decompressing install_log.txt | cut -d " " -f 4 | rev | cut -d "/" -f2- | rev | tr -d '\040\011\012\015'
+    metaphlan2.py --install
     """
 }
 
