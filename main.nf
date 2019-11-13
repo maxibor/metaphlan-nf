@@ -45,13 +45,15 @@ Channel
 
 process build_metaphlan_db {
 
-  output:
-    stdout into mp_db_path
+    label 'intenso'
+
+    output:
+        stdout into mp_db_path
     
-  script:
-    """
-    metaphlan2.py --install
-    """
+    script:
+        """
+        metaphlan2.py --install --nproc ${task.cpus}
+        """
 }
 
 
