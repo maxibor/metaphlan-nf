@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/maxibor/metaphlan-nf.svg?branch=master)](https://travis-ci.org/maxibor/metaphlan-nf)
+[![Build Status](https://travis-ci.com/maxibor/metaphlan-nf.svg?token=pwT9AgYi4qJY4LTp9WUy&branch=master)](https://travis-ci.com/maxibor/metaphlan-nf)
 
 # metaphlan-nf
 
