@@ -6,7 +6,6 @@
 params.reads = ''
 params.phred = 33
 params.results = './results'
-params.minhit = 50
 params.pairedEnd = true
 params.help = false
 
