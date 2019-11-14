@@ -2,7 +2,7 @@
 
 # metaphlan-nf
 
-Simple metaphlan2 Nextflow pipeline
+Simple [AdapterRemoval](https://github.com/MikkelSchubert/adapterremoval) - [Metaphlan2](https://bitbucket.org/biobakery/metaphlan2/src/default) (by default, version 2.7.5) Nextflow pipeline.
 
 ## Dependancies
 
@@ -47,7 +47,7 @@ metaphlan-nf: simple metaphlan2 Nextflow pipeline
 =========================================
 Usage:
 The typical command for running the pipeline is as follows:
-nextflow run maxibor/metaphlan-nf --reads '/path/to/paired_end_reads_*.{1,2}.fastq.gz' --metaphlandb '/path/to/minimetaphlan2_v2_8GB_201904_UPDATE.tgz'
+nextflow run maxibor/metaphlan-nf --reads '/path/to/paired_end_reads_*.{1,2}.fastq.gz'
 Mandatory arguments:
   --reads                       Path to input data (must be surrounded with quotes)
 
