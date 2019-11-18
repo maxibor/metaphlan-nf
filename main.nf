@@ -96,7 +96,7 @@ process get_read_count {
         set val(name), stdout into nb_reads_ch
     script:
         """
-        grep 'Total number of read pairs:' $ar_settings | cut -d : -f 2 | tr -d '\040\011\012\015'
+        grep 'Number of retained reads:' $ar_settings | cut -d : -f 2 | tr -d '\040\011\012\015'
         """
 }
 
