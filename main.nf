@@ -8,6 +8,9 @@ params.phred = 33
 params.results = './results'
 params.pairedEnd = true
 params.help = false
+params.mpa_db_name = "mpa_v20_m200"
+params.mpa_db = "https://github.com/maxibor/metaphlan-nf/releases/download/0.1/mpa_v20_m200.fna.bz2"
+params.mpa_pkl = "$baseDir/assets/mpa_v20_m200.pkl"
 
 def helpMessage() {
     log.info"""
@@ -42,16 +45,32 @@ Channel
     .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\n" }
 	.set {reads_to_trim}
 
+Channel
+    .fromPath (params.mpa_db)
+    .ifEmpty { exit 1, "Cannot find Metaphlan Markers fasta file: ${params.mpa_db}\n" }
+    .set {mpa_db}
+
+Channel
+    .fromPath(params.mpa_pkl)
+    .ifEmpty{exit 1, "Cannot find Metaphlan index pickle file: ${params.mpa_pkl}\n"}
+    .set {mpa_pkl}
+
 process build_metaphlan_db {
 
     label 'intenso'
 
+    stageInMode 'copy'
+
+    input:
+        file(fasta) from mpa_db
     output:
-        stdout into mp_db_path
+        file("*.bt2") into mpa_db_path
     
     script:
+        decomp_fasta = fasta.toString().minus(".bz2")
         """
-        metaphlan2.py --install --nproc ${task.cpus}
+        bunzip2 $fasta
+        bowtie2-build $decomp_fasta ${params.mpa_db_name}
         """
 }
 
@@ -110,7 +129,8 @@ process metaphlan {
 
     input:
         set val(name), file(reads) from trimmed_reads
-        val(db) from mp_db_path
+        file(bt_index) from mpa_db_path
+        file(pkl) from mpa_pkl
 
     output:
         set val(name), file('*.metaphlan.out') into metaphlan_out
@@ -123,6 +143,8 @@ process metaphlan {
         if (params.pairedEnd){
             """
             metaphlan2.py ${reads[0]},${reads[1]} \\
+                          --mpa_pkl $pkl \\
+                          --bowtie2db ${params.mpa_db_name} \\
                           -o $out \\
                           --input_type fastq \\
                           --bowtie2out $bt_out  \\
@@ -131,6 +153,8 @@ process metaphlan {
         } else {
             """
             metaphlan2.py $reads \\
+                          --mpa_pkl $pkl \\
+                          --bowtie2db ${params.mpa_db_name} \\
                           -o $out \\
                           --input_type fastq \\
                           --bowtie2out $bt_out  \\
