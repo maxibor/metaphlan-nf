@@ -56,6 +56,7 @@ Channel
     .set {mpa_pkl}
 
 process build_metaphlan_db {
+    tag "${params.map_db_name}"
 
     label 'intenso'
 
@@ -142,23 +143,23 @@ process metaphlan {
         tmp_dir = baseDir+"/tmp"
         if (params.pairedEnd){
             """
-            metaphlan2.py ${reads[0]},${reads[1]} \\
-                          --mpa_pkl $pkl \\
+            metaphlan2.py --mpa_pkl $pkl \\
                           --bowtie2db ${params.mpa_db_name} \\
                           -o $out \\
                           --input_type fastq \\
                           --bowtie2out $bt_out  \\
                           --nproc ${task.cpus} \\
+                          ${reads[0]},${reads[1]}
             """    
         } else {
             """
-            metaphlan2.py $reads \\
-                          --mpa_pkl $pkl \\
+            metaphlan2.py --mpa_pkl $pkl \\
                           --bowtie2db ${params.mpa_db_name} \\
                           -o $out \\
                           --input_type fastq \\
                           --bowtie2out $bt_out  \\
                           --nproc ${task.cpus} \\
+                           $reads
             """  
         }
         
