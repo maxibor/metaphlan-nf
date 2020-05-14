@@ -5,4 +5,4 @@ channels:
   - defaults
 dependencies:
   - adapterremoval=2.3.1
-  - metaphlan2=2.7.5
+  - metaphlan2=2.96.1
