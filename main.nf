@@ -56,7 +56,7 @@ Channel
     .set {mpa_pkl}
 
 process build_metaphlan_db {
-    tag "${params.map_db_name}"
+    tag "${params.mpa_db_name}"
 
     label 'intenso'
 
