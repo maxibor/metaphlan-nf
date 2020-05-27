@@ -8,7 +8,7 @@ work
 report*
 dag.png*
 .vscode
-
+test/mpa_v20_m200.tar.gz
 
 # C extensions
 *.so

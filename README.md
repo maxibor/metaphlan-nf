@@ -2,7 +2,7 @@
 
 # metaphlan-nf
 
-Simple [AdapterRemoval](https://github.com/MikkelSchubert/adapterremoval) - [Metaphlan2](https://bitbucket.org/biobakery/metaphlan2/src/default) (by default, version 2.7.5) Nextflow pipeline.
+Simple [AdapterRemoval](https://github.com/MikkelSchubert/adapterremoval) - [Metaphlan2](https://bitbucket.org/biobakery/metaphlan2/src/default) (by default, version 2.8) Nextflow pipeline.
 
 ## Dependancies
 
@@ -11,9 +11,17 @@ Simple [AdapterRemoval](https://github.com/MikkelSchubert/adapterremoval) - [Met
 
 ## Usage
 
+```bash
+nextflow run maxibor/metaphlan-nf -profile [docker|conda|singularity] --reads "/path/to/paired_end_reads_*.{1,2}.fastq.gz"
 ```
-nextflow run maxibor/metaphlan-nf --reads "/path/to/paired_end_reads_*.{1,2}.fastq.gz"
-```
+
+Specify the container/environment system you would like to use with `-profile`:  
+
+- conda: `-profile conda`
+- docker: `-profile docker`
+- singularity: `-profile singularity`
+
+By default, metaphlan will use the database version `mpa_v20_m200`
 
 ### Input
 

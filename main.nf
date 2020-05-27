@@ -1,17 +1,4 @@
 #!/usr/bin/env nextflow
-
-
-
-
-params.reads = ''
-params.phred = 33
-params.results = './results'
-params.pairedEnd = true
-params.help = false
-params.mpa_db_name = "mpa_v20_m200"
-params.mpa_db = "https://github.com/maxibor/metaphlan-nf/releases/download/0.1/mpa_v20_m200.fna.bz2"
-params.mpa_pkl = "$baseDir/assets/mpa_v20_m200.pkl"
-
 def helpMessage() {
     log.info"""
      metaphlan-nf: simple metaphlan2 Nextflow pipeline
@@ -46,14 +33,9 @@ Channel
 	.set {reads_to_trim}
 
 Channel
-    .fromPath (params.mpa_db)
-    .ifEmpty { exit 1, "Cannot find Metaphlan Markers fasta file: ${params.mpa_db}\n" }
-    .set {mpa_db}
-
-Channel
-    .fromPath(params.mpa_pkl)
-    .ifEmpty{exit 1, "Cannot find Metaphlan index pickle file: ${params.mpa_pkl}\n"}
-    .set {mpa_pkl}
+    .fromPath (params.mpa_db_tar)
+    .ifEmpty { exit 1, "Cannot find Metaphlan database tar file: ${params.mpa_db_tar}\n" }
+    .set {mpa_db_tar}
 
 process build_metaphlan_db {
     tag "${params.mpa_db_name}"
@@ -63,18 +45,19 @@ process build_metaphlan_db {
     stageInMode 'copy'
 
     input:
-        file(fasta) from mpa_db
+        file(tarfile) from mpa_db_tar
     output:
-        file("*.bt2") into mpa_db_path
+        file("${params.mpa_db_name}") into mpa_db_path
     
     script:
-        decomp_fasta = fasta.toString().minus(".bz2")
         """
-        bunzip2 $fasta
-        bowtie2-build --threads ${task.cpus} $decomp_fasta ${params.mpa_db_name}
+        tar -zxvf $tarfile
         """
 }
 
+mpa_db_path
+    .first()
+    .set {mpa_bt_db}
 
 process AdapterRemoval {
     tag "$name"
@@ -130,8 +113,7 @@ process metaphlan {
 
     input:
         set val(name), file(reads) from trimmed_reads
-        file(bt_index) from mpa_db_path
-        file(pkl) from mpa_pkl
+        file (mpa_db) from mpa_bt_db
 
     output:
         set val(name), file('*.metaphlan.out') into metaphlan_out
@@ -143,9 +125,6 @@ process metaphlan {
         tmp_dir = baseDir+"/tmp"
         if (params.pairedEnd){
             """
-            mkdir ${params.mpa_db_name}
-            mv $pkl ${params.mpa_db_name}/$pkl
-            mv *.bt2 ${params.mpa_db_name}
             metaphlan2.py --bowtie2db ${params.mpa_db_name} \\
                           -o $out \\
                           --input_type fastq \\
@@ -155,9 +134,6 @@ process metaphlan {
             """    
         } else {
             """
-            mkdir ${params.mpa_db_name}
-            mv $pkl ${params.mpa_db_name}/$pkl
-            mv *.bt2 ${params.mpa_db_name}
             metaphlan2.py --bowtie2db ${params.mpa_db_name} \\
                           -o $out \\
                           --input_type fastq \\
