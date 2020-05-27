@@ -4,5 +4,5 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - adapterremoval=2.3.1
-  - metaphlan2=2.96.1
+  - adapterremoval
+  - metaphlan2=2.8

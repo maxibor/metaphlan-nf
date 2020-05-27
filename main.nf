@@ -143,8 +143,10 @@ process metaphlan {
         tmp_dir = baseDir+"/tmp"
         if (params.pairedEnd){
             """
-            metaphlan2.py --mpa_pkl $pkl \\
-                          --bowtie2db ${params.mpa_db_name} \\
+            mkdir ${params.mpa_db_name}
+            mv $pkl ${params.mpa_db_name}/$pkl
+            mv *.bt2 ${params.mpa_db_name}
+            metaphlan2.py --bowtie2db ${params.mpa_db_name} \\
                           -o $out \\
                           --input_type fastq \\
                           --bowtie2out $bt_out  \\
@@ -153,8 +155,10 @@ process metaphlan {
             """    
         } else {
             """
-            metaphlan2.py --mpa_pkl $pkl \\
-                          --bowtie2db ${params.mpa_db_name} \\
+            mkdir ${params.mpa_db_name}
+            mv $pkl ${params.mpa_db_name}/$pkl
+            mv *.bt2 ${params.mpa_db_name}
+            metaphlan2.py --bowtie2db ${params.mpa_db_name} \\
                           -o $out \\
                           --input_type fastq \\
                           --bowtie2out $bt_out  \\
