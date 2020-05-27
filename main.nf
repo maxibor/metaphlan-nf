@@ -71,7 +71,7 @@ process build_metaphlan_db {
         decomp_fasta = fasta.toString().minus(".bz2")
         """
         bunzip2 $fasta
-        bowtie2-build $decomp_fasta ${params.mpa_db_name}
+        bowtie2-build --threads ${task.cpus} $decomp_fasta ${params.mpa_db_name}
         """
 }
 
