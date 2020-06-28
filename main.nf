@@ -49,7 +49,7 @@ process build_metaphlan_db {
     label 'intenso'
 
     output:
-        val("${params.mpa_db_name}") into mpa_db_path
+        val("${params.mpa_db_name}") into mpa_db_path_wait1, mpa_db_path_wait2
     
     script:
         """
@@ -117,7 +117,7 @@ process metaphlan {
 
     input:
         set val(name), file(reads) from trimmed_reads
-        val (mpa_db) from mpa_db_path
+        val (mpa_db) from mpa_db_path_wait1
 
     output:
         set val(name), file('*.metaphlan.out') into metaphlan_out
@@ -196,6 +196,7 @@ process decompress_fasta {
     label 'expresso'
 
     output:
+        val(wait) from mpa_db_path_wait2
         file("*.fa") into fasta_ref
     script:
         """
