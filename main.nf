@@ -49,13 +49,15 @@ process build_metaphlan_db {
     label 'intenso'
 
     output:
-        val("${params.mpa_db_name}") into mpa_db_path_wait1, mpa_db_path_wait2
+        val("${params.mpa_db_name}") into mpa_db_path_wait
     
     script:
         """
         metaphlan --install -x ${params.mpa_db_name} --bowtie2db ${params.bt2db} --nproc ${task.cpus}
         """
 }
+
+mpa_db_path_wait.into{mpa_db_path_wait1;  mpa_db_path_wait2}
 
 process AdapterRemoval {
     tag "$name"
