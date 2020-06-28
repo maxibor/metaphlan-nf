@@ -50,9 +50,9 @@ def parse_metaphlan(infile, nb_reads, basename, outfile):
     OUTPUT:
         pandas Dataframe
     '''
-    df = pd.read_csv(infile, sep="\t")
-    df.rename(columns={'#SampleID': 'Taxon',
-                       'Metaphlan2_Analysis': basename}, inplace=True)
+    df = pd.read_csv(infile, sep="\t", skiprows=3)
+    df.rename(columns={'#clade_name': 'Taxon',
+                       'relative_abundance': basename}, inplace=True)
     df[basename] = (df[basename]/100*nb_reads).astype(int)
 
     df.to_csv(outfile)

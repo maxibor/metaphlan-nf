@@ -1,0 +1,17 @@
+name: metaphlan-nf
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python
+  - pip
+  - pandas
+  - adapterremoval
+  - metaphlan
+  - samtools
+  - mapdamage2
+  - damageprofiler
+  - multiqc
+  - pip:
+    - git+https://git@github.com/maxibor/pydamage.git

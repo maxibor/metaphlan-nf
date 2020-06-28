@@ -5,8 +5,8 @@ LABEL authors="Maxime Borry" \
 # Install the conda environment
 COPY environment.yml /
 RUN conda env create -f /environment.yml && conda clean -a
-RUN conda env export --name metaphlan-nf-py > metaphlan-nf-py.yml
-ENV PATH /opt/conda/envs/metaphlan-nf-py/bin:$PATH
+RUN conda env export --name metaphlan-nf > metaphlan-nf.yml
+ENV PATH /opt/conda/envs/metaphlan-nf/bin:$PATH
 
 # Dump the details of the installed packages to a file for posterity
-RUN conda env export --name metaphlan-nf-py > metaphlan-nf-py.yml
+RUN conda env export --name metaphlan-nf > metaphlan-nf.yml

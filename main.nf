@@ -14,6 +14,10 @@ def helpMessage() {
     Settings:
       --phred                       Specifies the fastq quality encoding (33 | 64). Defaults to ${params.phred}
       --pairedEnd                   Specified if reads are paired-end (true | false). Default = ${params.pairedEnd}
+      --collapse                    Collapse forward and reverse read, for paired-end reads. Default = ${params.collapse}
+      --ancient                     Run DamageProfiler and Pydamage. Default = ${params.ancient}
+      --mpa_db_name                 Metaphlan database name. Default = ${params.mpa_db_name}
+      --bt2db                       Directory to store metaphlan database files. Default = ${params.bt2db}
 
     Options:
       --results                     The output directory where the results will be saved. Defaults to ${params.results}
@@ -32,32 +36,26 @@ Channel
     .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\n" }
 	.set {reads_to_trim}
 
-Channel
-    .fromPath (params.mpa_db_tar)
-    .ifEmpty { exit 1, "Cannot find Metaphlan database tar file: ${params.mpa_db_tar}\n" }
-    .set {mpa_db_tar}
+fasta_db_file = "${params.bt2db}/*.fna.bz2"
+
+// Channel
+//     .fromPath (params.mpa_db_tar)
+//     .ifEmpty { exit 1, "Cannot find Metaphlan database tar file: ${params.mpa_db_tar}\n" }
+//     .set {mpa_db_tar}
 
 process build_metaphlan_db {
     tag "${params.mpa_db_name}"
 
     label 'intenso'
 
-    stageInMode 'copy'
-
-    input:
-        file(tarfile) from mpa_db_tar
     output:
-        file("${params.mpa_db_name}") into mpa_db_path
+        val("${params.mpa_db_name}") into mpa_db_path
     
     script:
         """
-        tar -zxvf $tarfile
+        metaphlan --install -x ${params.mpa_db_name} --bowtie2db ${params.bt2db} --nproc ${task.cpus}
         """
 }
-
-mpa_db_path
-    .first()
-    .set {mpa_bt_db}
 
 process AdapterRemoval {
     tag "$name"
@@ -69,18 +67,24 @@ process AdapterRemoval {
 
     output:
         set val(name), file('*.trimmed.fastq') into trimmed_reads
-        set val(name), file("*.settings") into adapter_removal_results
+        set val(name), file("*.settings") into adapter_removal_results, adapter_removal_results_multiqc
 
     script:
-        out1 = name+".pair1.trimmed.fastq"
-        out2 = name+".pair2.trimmed.fastq"
-        se_out = name+".trimmed.fastq"
         settings = name+".settings"
-        if (params.pairedEnd){
+        if (params.pairedEnd && !params.collapse){
+            out1 = name+".pair1.trimmed.fastq"
+            out2 = name+".pair2.trimmed.fastq"
             """
             AdapterRemoval --basename $name --file1 ${reads[0]} --file2 ${reads[1]} --trimns --trimqualities --minquality 20 --minlength 30 --output1 $out1 --output2 $out2 --threads ${task.cpus} --qualitybase ${params.phred} --settings $settings
             """
-        } else {
+        } else if (params.pairedEnd && params.collapse) {
+            se_out = name+".trimmed.fastq"
+            """
+            AdapterRemoval --basename $name --file1 ${reads[0]} --file2 ${reads[1]} --trimns --trimqualities --minquality 20 --minlength 30 --collapse --outputcollapsed $se_out --threads ${task.cpus} --qualitybase ${params.phred} --settings $settings
+            """
+        } 
+        else {
+            se_out = name+".trimmed.fastq"
             """
             AdapterRemoval --basename $name --file1 ${reads[0]} --trimns --trimqualities --minquality 20 --minlength 30 --output1 $se_out --threads ${task.cpus} --qualitybase ${params.phred} --settings $settings
             """
@@ -113,33 +117,39 @@ process metaphlan {
 
     input:
         set val(name), file(reads) from trimmed_reads
-        file (mpa_db) from mpa_bt_db
+        val (mpa_db) from mpa_db_path
 
     output:
         set val(name), file('*.metaphlan.out') into metaphlan_out
-        set val(name), file('*_bowtie.sam') into metaphlan_bowtie_out
+        set val(name), path('*.sam') into mpa_aln
 
     script:
         out = name+".metaphlan.out"
-        bt_out = name+"_bowtie.sam"
+        sam_out = name+".sam"
+        bt2_out = name+'.bowtie'
         tmp_dir = baseDir+"/tmp"
-        if (params.pairedEnd){
+        if (params.pairedEnd && !params.collapse){
             """
-            metaphlan2.py --bowtie2db ${params.mpa_db_name} \\
-                          -o $out \\
-                          --input_type fastq \\
-                          --bowtie2out $bt_out  \\
-                          --nproc ${task.cpus} \\
-                          ${reads[0]},${reads[1]}
+            metaphlan ${reads[0]},${reads[1]} \\
+                      --bowtie2db ${params.bt2db} \\
+                      -x ${params.mpa_db_name} \\
+                      -o $out \\
+                      --input_type fastq \\
+                      --bowtie2out $bt2_out \\
+                      --samout $sam_out  \\
+                      --nproc ${task.cpus} \\
             """    
         } else {
             """
-            metaphlan2.py --bowtie2db ${params.mpa_db_name} \\
-                          -o $out \\
-                          --input_type fastq \\
-                          --bowtie2out $bt_out  \\
-                          --nproc ${task.cpus} \\
-                           $reads
+            metaphlan $reads \\
+                      --bowtie2db ${params.bt2db} \\
+                      -x ${params.mpa_db_name} \\
+                      -o $out \\
+                      --input_type fastq \\
+                      --bowtie2out $bt2_out \\
+                      --samout $sam_out  \\
+                      --nproc ${task.cpus} \\
+                      
             """  
         }
         
@@ -180,4 +190,157 @@ process metaphlan_merge {
         """
         merge_metaphlan_res.py -o $out
         """    
+}
+
+process decompress_fasta {
+    label 'expresso'
+
+    output:
+        file("*.fa") into fasta_ref
+    script:
+        """
+        bunzip2 -c $fasta_db_file > mpa_db_${params.mpa_db_name}.fa
+        """
+}
+
+fasta_ref.into{fasta_ref_decomp_ch; fasta_ref_damage_profiler}
+
+process sam2bam {
+    tag "$name"
+
+    label 'expresso'
+
+    input:
+        path(fasta) from fasta_ref_decomp_ch
+        tuple val(name), path(sam) from mpa_aln
+    output:
+        set val(name), path('*.sorted.bam') into mpa_aln_damageprofiler, mpa_aln_pydamage
+        set val(name), path('*.all_mapped.bam') into mpa_aln_stat
+    script:
+        """
+        samtools faidx $fasta
+        samtools view -b -@ ${task.cpus} $sam -o ${name}.all_mapped.bam
+        samtools view -F 4 $sam | cut -f 3 | sort | uniq > mapped_refs.txt
+        samtools view -H -t $fasta $sam > all_refs.txt
+        grep -Ff mapped_refs.txt all_refs.txt > mapped.sam
+        samtools view -F 4 $sam >> mapped.sam
+        samtools view -h -b -@ ${task.cpus} mapped.sam | samtools sort -@ ${task.cpus} > ${name}.sorted.bam
+        """
+}
+
+process samtools_stats {
+    tag "$name"
+
+    label 'ristretto'
+
+    input:
+        set val(name), file(bam) from mpa_aln_stat
+    output:
+        file("*.stats") into samtools_stats_out
+    script:
+        out = name+".stats"
+        """
+        samtools stats $bam > $out
+        """
+}
+
+
+if (params.ancient) {
+
+    // process damageprofiler {
+    //     tag "$name"
+
+    //     label 'expresso'
+
+    //     publishDir "${params.results}/damageProfiler/${name}_", mode: 'copy'
+
+    //     input:
+    //         set val(name), path(aln) from mpa_aln_damageprofiler
+    //         path(fasta) from fasta_ref_damage_profiler
+    //     output:
+    //         path("*.dmgprof.json") into damageprofiler_result_ch
+    //     script:
+    //         outfile = name+".dmgprof.json"
+    //         maxmem = task.memory.toGiga()
+    //         """
+    //         samtools index $aln
+    //         samtools faidx $fasta
+    //         damageprofiler -Xmx${maxmem}g -i $aln -r $fasta -o tmp
+    //         mv tmp/${name}.sorted/dmgprof.json $outfile
+    //         """
+    // }
+
+        process mapdamage {
+        tag "$name"
+
+        label 'long_single'
+
+        publishDir "${params.results}/mapdamage/$name", mode: 'copy'
+
+        input:
+            set val(name), path(aln) from mpa_aln_damageprofiler
+            path(fasta) from fasta_ref_damage_profiler
+        output:
+            path("mapdamage_out/*") into damageprofiler_result_ch
+        script:
+            maxmem = task.memory.toGiga()
+            """
+            samtools index $aln
+            samtools faidx $fasta
+            mapDamage --merge-reference-sequences -r $fasta -i $aln -d mapdamage_out
+            """
+    }
+    
+    process pydamage {
+        tag "$name"
+        
+        label 'intenso'
+
+        publishDir "${params.results}/pydamage/$name", mode: 'copy'
+
+        input:
+            tuple val(name), path(aln) from mpa_aln_pydamage
+        output:
+            tuple val(name), path("*.pydamage_results.csv") into pydamage_result_ch
+            path "${name}/plots", optional: true
+        script:
+            output = name
+            if (params.pydamage_plot) {
+                plot = "--plot"
+            } else {
+                plot = ""
+            }
+            """
+            samtools index $aln
+            pydamage --force -p ${task.cpus} -m ${params.minread} -c ${params.coverage} $plot -o $output $aln
+            mv ${name}/pydamage_results.csv ${name}.pydamage_results.csv
+            """
+    }
+
+} else {
+    pydamage_result_ch = Channel.empty()
+    damageprofiler_result_ch = Channel.empty()
+}
+
+adapter_removal_results_multiqc
+    .map {it -> it[1]}
+    .set {adapter_removal_results_multiqc}
+
+
+process multiqc {
+
+    label 'ristretto'
+ 
+    publishDir "${params.results}", mode: 'copy'
+
+    input:
+        path('adapterRemoval/*') from adapter_removal_results_multiqc.collect().ifEmpty([])
+        path('samtools/*') from samtools_stats_out.collect().ifEmpty([])
+        // path('damageProfiler/*') from damageprofiler_result_ch.collect().ifEmpty([])
+    output:
+        path('*multiqc_report.html')
+    script:
+        """
+        multiqc -c ${params.multiqc_config} .
+        """
 }

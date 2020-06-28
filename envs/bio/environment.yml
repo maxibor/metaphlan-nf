@@ -1,8 +1,0 @@
-name: metaphlan-nf-bio
-channels:
-  - conda-forge
-  - bioconda
-  - defaults
-dependencies:
-  - adapterremoval
-  - metaphlan2=2.8
