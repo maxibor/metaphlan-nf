@@ -197,8 +197,9 @@ process metaphlan_merge {
 process decompress_fasta {
     label 'expresso'
 
-    output:
+    input:
         val(wait) from mpa_db_path_wait2
+    output:
         file("*.fa") into fasta_ref
     script:
         """
