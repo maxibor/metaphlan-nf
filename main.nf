@@ -124,34 +124,32 @@ process metaphlan {
     output:
         set val(name), file('*.metaphlan.out') into metaphlan_out
         set val(name), path('*.sam') into mpa_aln
+        path("*.bowtie2.log") into bt2_log
 
     script:
         out = name+".metaphlan.out"
         sam_out = name+".sam"
-        bt2_out = name+'.bowtie'
-        tmp_dir = baseDir+"/tmp"
+        bt_out = name+".bowtie2.log"
+        btdb = "${params.bt2db}/${params.mpa_db_name}"
         if (params.pairedEnd && !params.collapse){
             """
-            metaphlan ${reads[0]},${reads[1]} \\
+            bowtie2 --no-unal --very-sensitive -S $sam_out -x $btdb -p ${task.cpus} -1 ${reads[0]} -2 ${reads[1]} 2> $bt_out
+            metaphlan $sam_out \\
+                      -o $out \\
                       --bowtie2db ${params.bt2db} \\
                       -x ${params.mpa_db_name} \\
-                      -o $out \\
-                      --input_type fastq \\
-                      --bowtie2out $bt2_out \\
-                      --samout $sam_out  \\
+                      --input_type sam \\
                       --nproc ${task.cpus} \\
             """    
         } else {
             """
-            metaphlan $reads \\
+            bowtie2 --no-unal --very-sensitive -S $sam_out -x $btdb -p ${task.cpus} -U $reads --met-file 2> $bt_out
+            metaphlan $sam_out \\
+                      -o $out \\
                       --bowtie2db ${params.bt2db} \\
                       -x ${params.mpa_db_name} \\
-                      -o $out \\
-                      --input_type fastq \\
-                      --bowtie2out $bt2_out \\
-                      --samout $sam_out  \\
+                      --input_type sam \\
                       --nproc ${task.cpus} \\
-                      
             """  
         }
         
@@ -219,32 +217,13 @@ process sam2bam {
         tuple val(name), path(sam) from mpa_aln
     output:
         set val(name), path('*.sorted.bam') into mpa_aln_damageprofiler, mpa_aln_pydamage
-        set val(name), path('*.all_mapped.bam') into mpa_aln_stat
     script:
         """
-        samtools faidx $fasta
-        samtools view -b -@ ${task.cpus} $sam -o ${name}.all_mapped.bam
         samtools view -F 4 $sam | cut -f 3 | sort | uniq > mapped_refs.txt
-        samtools view -H -t $fasta $sam > all_refs.txt
+        samtools view -H $sam > all_refs.txt
         grep -Ff mapped_refs.txt all_refs.txt > mapped.sam
         samtools view -F 4 $sam >> mapped.sam
         samtools view -h -b -@ ${task.cpus} mapped.sam | samtools sort -@ ${task.cpus} > ${name}.sorted.bam
-        """
-}
-
-process samtools_stats {
-    tag "$name"
-
-    label 'ristretto'
-
-    input:
-        set val(name), file(bam) from mpa_aln_stat
-    output:
-        file("*.stats") into samtools_stats_out
-    script:
-        out = name+".stats"
-        """
-        samtools stats $bam > $out
         """
 }
 
@@ -300,12 +279,14 @@ if (params.ancient) {
         
         label 'intenso'
 
+        errorStrategy 'ignore'
+
         publishDir "${params.results}/pydamage/$name", mode: 'copy'
 
         input:
             tuple val(name), path(aln) from mpa_aln_pydamage
         output:
-            tuple val(name), path("*.pydamage_results.csv") into pydamage_result_ch
+            tuple val(name), path("*.pydamage_results.csv") optional true into pydamage_result_ch
             path "${name}/plots", optional: true
         script:
             output = name
@@ -339,7 +320,7 @@ process multiqc {
 
     input:
         path('adapterRemoval/*') from adapter_removal_results_multiqc.collect().ifEmpty([])
-        path('samtools/*') from samtools_stats_out.collect().ifEmpty([])
+        path('bowtie2/*') from bt2_log.collect().ifEmpty([])
         // path('damageProfiler/*') from damageprofiler_result_ch.collect().ifEmpty([])
     output:
         path('*multiqc_report.html')
