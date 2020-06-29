@@ -8,7 +8,7 @@ dependencies:
   - pip
   - pandas
   - adapterremoval
-  - metaphlan
+  - metaphlan=3.0.1
   - samtools
   - mapdamage2
   - damageprofiler

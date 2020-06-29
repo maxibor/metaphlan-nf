@@ -143,7 +143,7 @@ process metaphlan {
             """    
         } else {
             """
-            bowtie2 --no-unal --very-sensitive -S $sam_out -x $btdb -p ${task.cpus} -U $reads --met-file 2> $bt_out
+            bowtie2 --no-unal --very-sensitive -S $sam_out -x $btdb -p ${task.cpus} -U $reads 2> $bt_out
             metaphlan $sam_out \\
                       -o $out \\
                       --bowtie2db ${params.bt2db} \\
