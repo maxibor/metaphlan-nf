@@ -3,7 +3,7 @@ report_comment: >
     analysis pipeline.
 top_modules:
     - 'adapterRemoval'
-    - 'samtools'
+    - 'bowtie2'
 
 fn_clean_exts:
     - '.gz'
