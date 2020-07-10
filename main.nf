@@ -115,7 +115,7 @@ process metaphlan {
 
     label 'intenso'
 
-    publishDir "${params.results}/metaphlan/$name", mode: 'copy'
+    publishDir "${params.results}/metaphlan/$name", mode: 'copy', pattern: '*.out'
 
     input:
         set val(name), file(reads) from trimmed_reads
@@ -211,6 +211,8 @@ process sam2bam {
     tag "$name"
 
     label 'expresso'
+
+    publishDir "${params.results}/metaphlan/$name", mode: 'copy', pattern: '*.sorted.bam'
 
     input:
         path(fasta) from fasta_ref_decomp_ch
