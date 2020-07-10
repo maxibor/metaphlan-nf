@@ -1,13 +1,13 @@
 #!/usr/bin/env nextflow
 def helpMessage() {
     log.info"""
-     metaphlan-nf: simple metaphlan2 Nextflow pipeline
+     metaphlan-nf: simple metaphlan Nextflow pipeline
      Homepage: https://github.com/maxibor/metaphlan-nf
      Author: Maxime Borry <borry@shh.mpg.de>
     =========================================
     Usage:
     The typical command for running the pipeline is as follows:
-    nextflow run maxibor/metaphlan-nf --reads '/path/to/paired_end_reads_*.{1,2}.fastq.gz' --metaphlandb '/path/to/minimetaphlan2_v2_8GB_201904_UPDATE.tgz'
+    nextflow run maxibor/metaphlan-nf --reads '/path/to/paired_end_reads_*.{1,2}.fastq.gz'
     Mandatory arguments:
       --reads                       Path to input data (must be surrounded with quotes)
 

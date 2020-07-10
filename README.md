@@ -2,12 +2,11 @@
 
 # metaphlan-nf
 
-Simple [AdapterRemoval](https://github.com/MikkelSchubert/adapterremoval) - [Metaphlan2](https://bitbucket.org/biobakery/metaphlan2/src/default) (by default, version 2.8) Nextflow pipeline.
+[AdapterRemoval](https://github.com/MikkelSchubert/adapterremoval) - [Metaphlan3]([https://bitbucket.org/biobakery/metaphlan2/src/default) (by default, version 3.0](https://github.com/biobakery/MetaPhlAn/tree/3.0)) Nextflow pipeline.
 
 ## Dependancies
 
-- [conda](https://conda.io/en/latest/) 
-- [Nextflow](https://www.nextflow.io/) : `conda install -c bioconda nextflow`
+- [Nextflow](https://www.nextflow.io/)
 
 ## Usage
 
@@ -21,7 +20,7 @@ Specify the container/environment system you would like to use with `-profile`:
 - docker: `-profile docker`
 - singularity: `-profile singularity`
 
-By default, metaphlan will use the database version `mpa_v20_m200`
+By default, metaphlan will use the database version `mpa_v30_CHOCOPhlAn_201901`
 
 ### Input
 
@@ -40,6 +39,18 @@ Use this to specify the location of your input FastQ files. For example:
 
 ### Output
 
+#### mapdamage
+
+[mapDamage](https://ginolhac.github.io/mapDamage/) output, per sample
+
+#### metaphlan
+
+[metaphlan3](https://github.com/biobakery/MetaPhlAn/tree/3.0) output, per sample
+
+#### pydamage
+
+[pydamage](https://github.com/maxibor/pydamage) output, per sample
+
 #### metaphlan_taxon_table.csv
 
 Taxon count table of all input samples.  
@@ -47,9 +58,9 @@ Samples in columns, Taxon in rows
 
 ## Help
 
-```
+```bash
 $ nextflow run maxibor/metaphlan-nf --help
-metaphlan-nf: simple metaphlan2 Nextflow pipeline
+metaphlan-nf: simple metaphlan Nextflow pipeline
  Homepage: https://github.com/maxibor/metaphlan-nf
  Author: Maxime Borry <borry@shh.mpg.de>
 =========================================
@@ -62,6 +73,10 @@ Mandatory arguments:
 Settings:
   --phred                       Specifies the fastq quality encoding (33 | 64). Defaults to 33
   --pairedEnd                   Specified if reads are paired-end (true | false). Default = true
+  --collapse                    Collapse forward and reverse read, for paired-end reads. Default = false
+  --ancient                     Run MapDamage and Pydamage. Default = false
+  --mpa_db_name                 Metaphlan database name. Default = mpa_v30_CHOCOPhlAn_201901
+  --bt2db                       Directory to store metaphlan database files. Default = /Users/borry/Documents/GitHub/metaphlan-nf/btdb
 
 Options:
   --results                     The output directory where the results will be saved. Defaults to ./results
