@@ -14,6 +14,7 @@ def helpMessage() {
     Settings:
       --phred                       Specifies the fastq quality encoding (33 | 64). Defaults to ${params.phred}
       --pairedEnd                   Specified if reads are paired-end (true | false). Default = ${params.pairedEnd}
+      --collapse                    Collapse forward and reverse read, for paired-end reads. Default = ${params.collapse}
 
     Options:
       --results                     The output directory where the results will be saved. Defaults to ${params.results}
@@ -69,23 +70,28 @@ process AdapterRemoval {
 
     output:
         set val(name), file('*.trimmed.fastq') into trimmed_reads
-        set val(name), file("*.settings") into adapter_removal_results
+        set val(name), file("*.settings") into adapter_removal_results, adapter_removal_results_multiqc
 
     script:
-        out1 = name+".pair1.trimmed.fastq"
-        out2 = name+".pair2.trimmed.fastq"
-        se_out = name+".trimmed.fastq"
         settings = name+".settings"
-        if (params.pairedEnd){
+        if (params.pairedEnd && !params.collapse){
+            out1 = name+".pair1.trimmed.fastq"
+            out2 = name+".pair2.trimmed.fastq"
             """
             AdapterRemoval --basename $name --file1 ${reads[0]} --file2 ${reads[1]} --trimns --trimqualities --minquality 20 --minlength 30 --output1 $out1 --output2 $out2 --threads ${task.cpus} --qualitybase ${params.phred} --settings $settings
             """
-        } else {
+        } else if (params.pairedEnd && params.collapse) {
+            se_out = name+".trimmed.fastq"
+            """
+            AdapterRemoval --basename $name --file1 ${reads[0]} --file2 ${reads[1]} --trimns --trimqualities --minquality 20 --minlength 30 --collapse --outputcollapsed $se_out --threads ${task.cpus} --qualitybase ${params.phred} --settings $settings
+            """
+        } 
+        else {
+            se_out = name+".trimmed.fastq"
             """
             AdapterRemoval --basename $name --file1 ${reads[0]} --trimns --trimqualities --minquality 20 --minlength 30 --output1 $se_out --threads ${task.cpus} --qualitybase ${params.phred} --settings $settings
             """
-        }
-            
+        }       
 }
 
 process get_read_count {
@@ -123,7 +129,7 @@ process metaphlan {
         out = name+".metaphlan.out"
         bt_out = name+"_bowtie.sam"
         tmp_dir = baseDir+"/tmp"
-        if (params.pairedEnd){
+        if (params.pairedEnd && !params.collapse){
             """
             metaphlan2.py --bowtie2db ${params.mpa_db_name} \\
                           -o $out \\
@@ -180,4 +186,23 @@ process metaphlan_merge {
         """
         merge_metaphlan_res.py -o $out
         """    
+}
+
+adapter_removal_results_multiqc
+    .map {it -> it[1]}
+    .set {adapter_removal_results_multiqc}
+
+
+process multiqc {
+ 
+    publishDir "${params.results}", mode: 'copy'
+
+    input:
+        path('adapterRemoval/*') from adapter_removal_results_multiqc.collect().ifEmpty([])
+    output:
+        path('*multiqc_report.html')
+    script:
+        """
+        multiqc .
+        """
 }
