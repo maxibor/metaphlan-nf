@@ -50,18 +50,19 @@ Samples in columns, Taxon in rows
 ```
 $ nextflow run maxibor/metaphlan-nf --help
 metaphlan-nf: simple metaphlan2 Nextflow pipeline
- Homepage: https://github.com/maxibor/metaphlan-nf
+ Homepage: https://github.com/maxibor/metaphlan-nf/tree/metaphlan2
  Author: Maxime Borry <borry@shh.mpg.de>
 =========================================
 Usage:
 The typical command for running the pipeline is as follows:
-nextflow run maxibor/metaphlan-nf --reads '/path/to/paired_end_reads_*.{1,2}.fastq.gz'
+nextflow run maxibor/metaphlan-nf -r metaphlan2 --reads '/path/to/paired_end_reads_*.{1,2}.fastq.gz'
 Mandatory arguments:
   --reads                       Path to input data (must be surrounded with quotes)
 
 Settings:
   --phred                       Specifies the fastq quality encoding (33 | 64). Defaults to 33
   --pairedEnd                   Specified if reads are paired-end (true | false). Default = true
+  --collapse                    Collapse forward and reverse read, for paired-end reads. Default = false
 
 Options:
   --results                     The output directory where the results will be saved. Defaults to ./results
