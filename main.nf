@@ -63,7 +63,7 @@ mpa_db_path
 process AdapterRemoval {
     tag "$name"
 
-    label 'expresso'
+    label 'intenso'
 
     input:
         set val(name), file(reads) from reads_to_trim
